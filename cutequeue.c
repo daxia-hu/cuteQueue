@@ -30,29 +30,21 @@ uint8_t Queue_push(Queue *queue, void *msg)
     ASSERT(NULL != msg);
     uint8_t *pData = queue->pdata;
     uint8_t *pMsg = msg;
-
-    if ((queue->msgNum + queue->rp) > queue->msgMax) // 写入的位置区间(0,rp)
+    if (queue->msgNum == queue->msgMax)
     {
-        if (queue->wp >= queue->rp)
-        {
-            return RET_ERR;
-        }
+        return RET_ERR;
     }
-    else if ((queue->msgNum + queue->rp) == queue->msgMax) // 写入的位置落在0位置上
+    else
     {
-        if (queue->rp == 0)
-        {
-            return RET_ERR;
-        }
-        else
+        if (queue->wp == queue->msgMax) // 写入的位置落在0位置上
         {
             queue->wp = 0;
         }
+        memcpy(pData + ((queue->wp) * (queue->msgSize)), pMsg, queue->msgSize);
+        queue->wp += 1;
+        queue->msgNum += 1;
+        return RET_SUC;
     }
-    memcpy(pData + ((queue->wp) * (queue->msgSize)), pMsg, queue->msgSize);
-    queue->wp += 1;
-    queue->msgNum += 1;
-    return RET_SUC;
 }
 /**
  * @brief 从消息队列中取出消息
@@ -76,9 +68,9 @@ uint8_t Queue_pull(Queue *queue, void *msg)
         {
             queue->rp = 0;
         }
+        memcpy(pMsg, pdata + ((queue->msgSize) * (queue->rp)), queue->msgSize);
+        queue->rp += 1;
+        queue->msgNum -= 1;
+        return RET_SUC;
     }
-    memcpy(pMsg, pdata + ((queue->msgSize) * (queue->rp)), queue->msgSize);
-    queue->rp += 1;
-    queue->msgNum -= 1;
-    return RET_SUC;
 }
